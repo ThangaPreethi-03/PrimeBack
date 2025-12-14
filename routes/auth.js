@@ -4,7 +4,27 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const router = express.Router();
+
+
 const dns = require("dns");
+const emailValidator = require("email-validator");
+
+// Function to validate real email domain
+async function isRealEmail(email) {
+  if (!emailValidator.validate(email)) return false;
+
+  const domain = email.split("@")[1];
+
+  return new Promise((resolve) => {
+    dns.resolveMx(domain, (err, addresses) => {
+      if (err || !addresses || addresses.length === 0) {
+        resolve(false); // No mail server = fake domain
+      } else {
+        resolve(true); // Domain exists
+      }
+    });
+  });
+}
 
 // ====================== REGISTER ======================
 router.post('/register', async (req, res) => {
@@ -91,21 +111,22 @@ router.post('/login', async (req, res) => {
 // ====================== CHECK EMAIL ======================
 router.post("/check-email", async (req, res) => {
   const { email } = req.body;
+
+  if (!email || !email.includes("@")) {
+    return res.json({ validDomain: false, exists: false });
+  }
+
   const domain = email.split("@")[1];
 
-  // Validate domain exists using MX lookup
-  dns.resolveMx(domain, async (err, mxRecords) => {
-    if (err || !mxRecords || mxRecords.length === 0) {
+  dns.resolveMx(domain, async (err, mx) => {
+    if (err || !mx || mx.length === 0) {
       return res.json({ validDomain: false, exists: false });
     }
 
-    // Check if user exists
     const found = await User.findOne({ email: email.toLowerCase().trim() });
-    const exists = !!found;
-
     return res.json({
       validDomain: true,
-      exists
+      exists: !!found
     });
   });
 });
