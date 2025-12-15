@@ -1,7 +1,9 @@
+// routes/orders.js
 const express = require("express");
-const router = express.Router();
-const Order = require("../models/Order");
 const jwt = require("jsonwebtoken");
+const Order = require("../models/Order");
+
+const router = express.Router();
 
 /* ------------------------
    OPTIONAL AUTH MIDDLEWARE
@@ -30,7 +32,7 @@ router.post("/", optionalAuth, async (req, res) => {
       items,
       total,
       status,
-      meta
+      meta,
     } = req.body;
 
     if (!invoiceNumber || !email || !items || !total) {
@@ -40,19 +42,18 @@ router.post("/", optionalAuth, async (req, res) => {
     const order = new Order({
       invoiceNumber,
       email,
-      userId: userId || req.user?._id || null,
+      userId: userId || req.user?.id || null,
       items,
       total,
       status: status || "Placed",
-      meta: meta || {}
+      meta: meta || {},
     });
 
     const saved = await order.save();
-
-    return res.json({ ok: true, order: saved });
+    res.json({ ok: true, order: saved });
   } catch (err) {
-    console.error("Order save failed:", err);
-    return res.status(500).json({ msg: "Server error", error: err.message });
+    console.error("ORDER CREATE ERROR:", err);
+    res.status(500).json({ msg: "Server error", error: err.message });
   }
 });
 
@@ -61,45 +62,34 @@ router.post("/", optionalAuth, async (req, res) => {
 --------------------------- */
 router.get("/user/:userId", async (req, res) => {
   try {
-    const orders = await Order.find({ userId: req.params.userId }).sort({ createdAt: -1 });
-    return res.json(orders);
+    const orders = await Order.find({
+      userId: req.params.userId,
+    }).sort({ createdAt: -1 });
+
+    res.json(orders);
   } catch (err) {
-    console.error("Order fetch error:", err);
-    return res.status(500).json({ msg: "Server error" });
+    console.error("FETCH USER ORDERS ERROR:", err);
+    res.status(500).json({ msg: "Server error" });
   }
 });
 
 /* ------------------------
-   ORDER TRACKING (BY INVOICE)
+   TRACK ORDER BY INVOICE
 --------------------------- */
 router.get("/track/:invoiceNumber", async (req, res) => {
   try {
-    const order = await Order.findOne({ invoiceNumber: req.params.invoiceNumber });
-    if (!order) return res.status(404).json({ msg: "Order not found" });
+    const order = await Order.findOne({
+      invoiceNumber: req.params.invoiceNumber,
+    });
 
-    return res.json(order);
+    if (!order) {
+      return res.status(404).json({ msg: "Order not found" });
+    }
+
+    res.json(order);
   } catch (err) {
-    console.error("Track order error:", err);
-    return res.status(500).json({ msg: "Server error" });
-  }
-});
-
-/* ------------------------
-   OPTIONAL: SEND EMAIL (If you enabled email in backend)
---------------------------- */
-router.post("/:id/send-email", async (req, res) => {
-  try {
-    const { email } = req.body;
-    const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).json({ msg: "Order not found" });
-
-    // If you added sendEmail function earlier:
-    // await sendEmail(email, "Your PrimeShop Invoice", `<p>Your invoice: ${order.invoiceNumber}</p>`);
-
-    return res.json({ ok: true, msg: "Email sent (if configured)" });
-  } catch (err) {
-    console.error("Email send error:", err);
-    return res.status(500).json({ msg: "Server error" });
+    console.error("TRACK ORDER ERROR:", err);
+    res.status(500).json({ msg: "Server error" });
   }
 });
 
