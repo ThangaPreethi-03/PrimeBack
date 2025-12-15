@@ -1,15 +1,16 @@
 // routes/auth.js
-const express = require('express');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const router = express.Router();
-
-
+const express = require("express");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const dns = require("dns");
 const emailValidator = require("email-validator");
+const User = require("../models/User");
 
-// Function to validate real email domain
+const router = express.Router();
+
+/* -------------------------
+   EMAIL DOMAIN VALIDATION
+-------------------------- */
 async function isRealEmail(email) {
   if (!emailValidator.validate(email)) return false;
 
@@ -18,23 +19,27 @@ async function isRealEmail(email) {
   return new Promise((resolve) => {
     dns.resolveMx(domain, (err, addresses) => {
       if (err || !addresses || addresses.length === 0) {
-        resolve(false); // No mail server = fake domain
+        resolve(false);
       } else {
-        resolve(true); // Domain exists
+        resolve(true);
       }
     });
   });
 }
 
-// ====================== REGISTER ======================
-router.post('/register', async (req, res) => {
+/* ======================
+   REGISTER
+====================== */
+router.post("/register", async (req, res) => {
   try {
     let { name, email, password, interests = [] } = req.body;
 
     email = email.toLowerCase().trim();
 
-    const existing = await User.findOne({ email });
-    if (existing) return res.status(400).json({ msg: 'Email already used' });
+    const exists = await User.findOne({ email });
+    if (exists) {
+      return res.status(400).json({ msg: "Email already used" });
+    }
 
     const hash = await bcrypt.hash(password, 10);
 
@@ -42,7 +47,7 @@ router.post('/register', async (req, res) => {
       name,
       email,
       passwordHash: hash,
-      interests
+      interests,
     });
 
     const token = jwt.sign(
@@ -50,7 +55,7 @@ router.post('/register', async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        interests: user.interests
+        interests: user.interests,
       },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
@@ -62,33 +67,40 @@ router.post('/register', async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        interests: user.interests
-      }
+        interests: user.interests,
+      },
     });
   } catch (err) {
+    console.error("REGISTER ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// ====================== LOGIN ======================
-router.post('/login', async (req, res) => {
+/* ======================
+   LOGIN
+====================== */
+router.post("/login", async (req, res) => {
   try {
     let { email, password } = req.body;
 
     email = email.toLowerCase().trim();
 
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ msg: "Invalid credentials" });
+    if (!user) {
+      return res.status(400).json({ msg: "Invalid credentials" });
+    }
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isMatch) return res.status(400).json({ msg: "Invalid credentials" });
+    const match = await bcrypt.compare(password, user.passwordHash);
+    if (!match) {
+      return res.status(400).json({ msg: "Invalid credentials" });
+    }
 
     const token = jwt.sign(
       {
         id: user._id,
         name: user.name,
         email: user.email,
-        interests: user.interests
+        interests: user.interests,
       },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
@@ -100,15 +112,18 @@ router.post('/login', async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        interests: user.interests
-      }
+        interests: user.interests,
+      },
     });
   } catch (err) {
+    console.error("LOGIN ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// ====================== CHECK EMAIL ======================
+/* ======================
+   CHECK EMAIL
+====================== */
 router.post("/check-email", async (req, res) => {
   const { email } = req.body;
 
@@ -123,12 +138,34 @@ router.post("/check-email", async (req, res) => {
       return res.json({ validDomain: false, exists: false });
     }
 
-    const found = await User.findOne({ email: email.toLowerCase().trim() });
-    return res.json({
+    const found = await User.findOne({
+      email: email.toLowerCase().trim(),
+    });
+
+    res.json({
       validDomain: true,
-      exists: !!found
+      exists: !!found,
     });
   });
+});
+
+/* ======================
+   GET CURRENT USER (🔥 IMPORTANT)
+====================== */
+router.get("/me", (req, res) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(401).json({ msg: "No token provided" });
+  }
+
+  try {
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    res.json(decoded);
+  } catch (err) {
+    return res.status(401).json({ msg: "Invalid token" });
+  }
 });
 
 module.exports = router;
