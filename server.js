@@ -1,4 +1,4 @@
-// server.js — FINAL SAFE VERSION (VERCEL + RENDER)
+// server.js — FINAL SAFE VERSION (RENDER FIXED)
 
 require("dotenv").config();
 const express = require("express");
@@ -14,10 +14,7 @@ const paymentRoutes = require("./routes/payments");
 
 const app = express();
 
-/* ------------------------------------------------
-   CORS CONFIG — FIXES REGISTER / LOGIN / CHECK-EMAIL
--------------------------------------------------- */
-
+/* ---------------- CORS ---------------- */
 const FRONTEND = process.env.FRONTEND_URL || "https://prime2-zb1z.vercel.app";
 
 app.use(
@@ -25,16 +22,13 @@ app.use(
     origin: [
       FRONTEND,
       "http://localhost:5173",
-      "http://localhost:3000"
+      "http://localhost:3000",
     ],
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-
-// ✅ Handle preflight properly
-app.options("*", cors());
 
 /* ---------------- MIDDLEWARE ---------------- */
 app.use(express.json({ limit: "5mb" }));
@@ -44,20 +38,20 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
-app.use("/api/users", userRoutes);      // ✅ ONLY ONCE
+app.use("/api/users", userRoutes);
 app.use("/api/payments", paymentRoutes);
 
-/* ---------------- HEALTH CHECK ---------------- */
+/* ---------------- HEALTH ---------------- */
 app.get("/", (req, res) => {
   res.send("PrimeShop backend running ✔️");
 });
 
-/* ---------------- 404 HANDLER ---------------- */
+/* ---------------- 404 ---------------- */
 app.use((req, res) => {
   res.status(404).json({ msg: "Route not found" });
 });
 
-/* ---------------- ERROR HANDLER ---------------- */
+/* ---------------- ERROR ---------------- */
 app.use((err, req, res, next) => {
   console.error("SERVER ERROR:", err);
   if (res.headersSent) return next(err);
@@ -67,11 +61,6 @@ app.use((err, req, res, next) => {
 /* ---------------- DB + SERVER ---------------- */
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
-
-if (!MONGO_URI) {
-  console.error("❌ Missing MONGO_URI in .env");
-  process.exit(1);
-}
 
 mongoose
   .connect(MONGO_URI)
@@ -85,9 +74,3 @@ mongoose
     console.error("MongoDB ERROR:", err);
     process.exit(1);
   });
-
-/* ---------------- GRACEFUL SHUTDOWN ---------------- */
-process.on("SIGINT", () => {
-  console.log("Gracefully shutting down...");
-  mongoose.disconnect().then(() => process.exit(0));
-});
