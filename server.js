@@ -1,4 +1,4 @@
-// server.js — FINAL PRODUCTION VERSION (VERCEL + RENDER SAFE)
+// server.js — FINAL CORS-FIXED VERSION (RENDER + VERCEL SAFE)
 
 require("dotenv").config();
 const express = require("express");
@@ -8,53 +8,34 @@ const cors = require("cors");
 const app = express();
 
 /* ===============================
-   ROUTE IMPORTS
+   ALLOWED ORIGINS
 ================================ */
-const authRoutes = require("./routes/auth");
-const productRoutes = require("./routes/products");
-const orderRoutes = require("./routes/orders");
-const userRoutes = require("./routes/users");
-const paymentRoutes = require("./routes/payments");
+const allowedOrigins = [
+  "https://prime2-zb1z.vercel.app",
+  "http://localhost:5173",
+  "http://localhost:3000",
+];
 
 /* ===============================
-   CORS CONFIG (VERY IMPORTANT)
+   CORS CONFIG (CORRECT WAY)
 ================================ */
-const FRONTEND_URL =
-  process.env.FRONTEND_URL || "https://prime2-zb1z.vercel.app";
-
-/**
- * 1️⃣ CORS middleware
- */
 app.use(
   cors({
-    origin: FRONTEND_URL,
+    origin: function (origin, callback) {
+      // allow requests with no origin (Postman, server-to-server)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-
-/**
- * 2️⃣ Explicit preflight handler (FIXES REGISTER / LOGIN BLOCK)
- */
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", FRONTEND_URL);
-  res.header(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, DELETE, OPTIONS"
-  );
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization"
-  );
-  res.header("Access-Control-Allow-Credentials", "true");
-
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
-  }
-
-  next();
-});
 
 /* ===============================
    BODY PARSERS
@@ -63,13 +44,13 @@ app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 /* ===============================
-   API ROUTES
+   ROUTES
 ================================ */
-app.use("/api/auth", authRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/orders", orderRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/payments", paymentRoutes);
+app.use("/api/auth", require("./routes/auth"));
+app.use("/api/products", require("./routes/products"));
+app.use("/api/orders", require("./routes/orders"));
+app.use("/api/users", require("./routes/users"));
+app.use("/api/payments", require("./routes/payments"));
 
 /* ===============================
    HEALTH CHECK
@@ -89,11 +70,8 @@ app.use((req, res) => {
    ERROR HANDLER
 ================================ */
 app.use((err, req, res, next) => {
-  console.error("SERVER ERROR:", err);
-  if (res.headersSent) return next(err);
-  res.status(500).json({
-    msg: err.message || "Internal server error",
-  });
+  console.error("SERVER ERROR:", err.message);
+  res.status(500).json({ msg: err.message });
 });
 
 /* ===============================
@@ -103,7 +81,7 @@ const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
 
 if (!MONGO_URI) {
-  console.error("❌ MONGO_URI missing in environment variables");
+  console.error("❌ Missing MONGO_URI");
   process.exit(1);
 }
 
@@ -111,20 +89,11 @@ mongoose
   .connect(MONGO_URI)
   .then(() => {
     console.log("MongoDB connected ✔️");
-    app.listen(PORT, () => {
-      console.log(`Backend running on port ${PORT} ✔️`);
-    });
+    app.listen(PORT, () =>
+      console.log(`Backend running on port ${PORT} ✔️`)
+    );
   })
   .catch((err) => {
-    console.error("MongoDB connection error:", err);
+    console.error("MongoDB error:", err);
     process.exit(1);
   });
-
-/* ===============================
-   GRACEFUL SHUTDOWN
-================================ */
-process.on("SIGINT", async () => {
-  console.log("Shutting down gracefully...");
-  await mongoose.disconnect();
-  process.exit(0);
-});
