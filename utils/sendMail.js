@@ -8,6 +8,9 @@ module.exports = async function sendEmail(to, subject, html, attachments = []) {
       user: process.env.MAIL_USER,
       pass: process.env.MAIL_PASS,
     },
+    console.log("MAIL_USER =", process.env.MAIL_USER);
+console.log("MAIL_PASS =", process.env.MAIL_PASS ? "OK" : "MISSING");
+
   });
 
   await transporter.sendMail({
