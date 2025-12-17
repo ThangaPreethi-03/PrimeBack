@@ -1,25 +1,32 @@
+// utils/sendEmail.js
 const nodemailer = require("nodemailer");
-const fs = require("fs");
 
-module.exports = async function sendEmail(to, subject, html, attachments = []) {
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.MAIL_USER,
-      pass: process.env.MAIL_PASS,
-    },
-    console.log("MAIL_USER =", process.env.MAIL_USER);
-console.log("MAIL_PASS =", process.env.MAIL_PASS ? "OK" : "MISSING");
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS,
+  },
+});
 
-  });
+async function sendEmail(to, subject, html) {
+  if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
+    console.error("❌ MAIL_USER / MAIL_PASS missing");
+    return;
+  }
 
-  await transporter.sendMail({
-    from: `"PrimeShop" <${process.env.MAIL_USER}>`,
-    to,
-    subject,
-    html,
-    attachments
-  });
+  try {
+    await transporter.sendMail({
+      from: `"PrimeShop" <${process.env.MAIL_USER}>`,
+      to,
+      subject,
+      html,
+    });
 
-  console.log("📧 Email sent successfully to:", to);   // <--- MUST PRINT
-};
+    console.log("✅ Email sent to:", to);
+  } catch (err) {
+    console.error("❌ Email failed:", err.message);
+  }
+}
+
+module.exports = sendEmail;
