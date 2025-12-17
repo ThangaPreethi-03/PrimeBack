@@ -50,6 +50,7 @@ app.use("/api/auth", require("./routes/auth"));
 app.use("/api/products", require("./routes/products"));
 app.use("/api/orders", require("./routes/orders"));
 app.use("/api/users", require("./routes/users"));
+
 app.use("/api/reviews", require("./routes/reviews"));
 
 app.use("/api/payments", require("./routes/payments"));
@@ -99,4 +100,5 @@ mongoose
     console.error("MongoDB error:", err);
     process.exit(1);
   });
+
 
