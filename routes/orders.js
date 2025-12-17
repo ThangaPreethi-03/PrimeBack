@@ -2,6 +2,7 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const Order = require("../models/Order");
+const sendEmail = require("../utils/sendEmail");
 
 const router = express.Router();
 
@@ -50,6 +51,23 @@ router.post("/", optionalAuth, async (req, res) => {
     });
 
     const saved = await order.save();
+
+    /* ------------------------
+       SEND EMAIL (🔥 FIX)
+    --------------------------- */
+    sendEmail(
+      email,
+      "Your PrimeShop Order Confirmation",
+      `
+        <h2>Thank you for your order!</h2>
+        <p><strong>Invoice:</strong> ${invoiceNumber}</p>
+        <p><strong>Total:</strong> ₹${total}</p>
+        <p>Status: ${saved.status}</p>
+        <br/>
+        <p>— PrimeShop Team</p>
+      `
+    );
+
     res.json({ ok: true, order: saved });
   } catch (err) {
     console.error("ORDER CREATE ERROR:", err);
