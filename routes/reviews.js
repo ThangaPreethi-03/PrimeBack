@@ -39,7 +39,7 @@ router.get("/product/:productId", async (req, res) => {
     }).sort({ createdAt: -1 });
 
     res.json(reviews);
-  } catch (err) {
+  } catch (err) 
     console.error("FETCH REVIEWS ERROR:", err);
     res.status(500).json({ msg: "Server error" });
   }
