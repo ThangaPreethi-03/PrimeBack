@@ -2,7 +2,7 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const Order = require("../models/Order");
-const sendEmail = require("../utils/sendEmail");
+const sendEmail = require("../utils/sendMail");
 
 const router = express.Router();
 
