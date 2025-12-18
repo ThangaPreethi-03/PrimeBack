@@ -1,8 +1,15 @@
 // utils/sendEmail.js
 const nodemailer = require("nodemailer");
-console.log("EMAIL:", process.env.EMAIL_USER);
-console.log("EMAIL_PASS:", process.env.EMAIL_PASS);
 
+/* ===============================
+   ENV CHECK LOGS
+================================ */
+console.log("📌 EMAIL_USER:", process.env.EMAIL_USER);
+console.log("📌 EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
+
+/* ===============================
+   TRANSPORTER SETUP
+================================ */
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -11,23 +18,38 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+/* ===============================
+   SEND EMAIL FUNCTION
+================================ */
 async function sendEmail(to, subject, html) {
+  console.log("📨 sendEmail called");
+  console.log("➡️ To:", to);
+  console.log("➡️ Subject:", subject);
+
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.error("❌ MAIL_USER / MAIL_PASS missing");
+    console.error("❌ EMAIL_USER / EMAIL_PASS missing");
     return;
   }
 
   try {
-    await transporter.sendMail({
+    console.log("⏳ Sending email...");
+
+    const info = await transporter.sendMail({
       from: `"PrimeShop" <${process.env.EMAIL_USER}>`,
       to,
       subject,
       html,
     });
 
-    console.log("✅ Email sent to:", to);
+    console.log("✅ Email sent successfully");
+    console.log("📬 Message ID:", info.messageId);
+    console.log("📨 Accepted by:", info.accepted);
+    console.log("📨 Rejected by:", info.rejected);
+
   } catch (err) {
-    console.error("❌ Email failed:", err.message);
+    console.error("❌ Email failed");
+    console.error("🧨 Error message:", err.message);
+    console.error("🧨 Full error:", err);
   }
 }
 
