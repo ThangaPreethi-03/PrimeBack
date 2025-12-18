@@ -2,7 +2,7 @@ const sgMail = require("@sendgrid/mail");
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-async function sendEmail(to, subject, html, pdfBuffer) {
+async function sendEmail(to, subject, html, pdfBuffer = null) {
   try {
     await sgMail.send({
       to,
@@ -21,7 +21,7 @@ async function sendEmail(to, subject, html, pdfBuffer) {
         : [],
     });
 
-    console.log("✅ Email sent successfully with invoice");
+    console.log("✅ Email sent successfully");
   } catch (err) {
     console.error("❌ Email failed:", err.response?.body || err.message);
   }
