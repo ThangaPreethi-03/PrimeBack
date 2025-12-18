@@ -1,49 +1,27 @@
-const nodemailer = require("nodemailer");
+// utils/sendEmail.js
+const sgMail = require("@sendgrid/mail");
 
-console.log("📌 EMAIL_USER:", process.env.EMAIL_USER);
-console.log("📌 EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
+console.log("📌 SENDGRID KEY exists:", !!process.env.SENDGRID_API_KEY);
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
-});
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 async function sendEmail(to, subject, html) {
   console.log("📨 sendEmail called");
   console.log("➡️ To:", to);
   console.log("➡️ Subject:", subject);
 
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.error("❌ EMAIL_USER / EMAIL_PASS missing");
-    return;
-  }
-
   try {
-    console.log("⏳ Sending email...");
-
-    const info = await transporter.sendMail({
-      from: `"PrimeShop" <${process.env.EMAIL_USER}>`,
+    await sgMail.send({
       to,
+      from: process.env.EMAIL_FROM,
       subject,
       html,
     });
 
-    console.log("✅ Email sent successfully");
-    console.log("📬 Message ID:", info.messageId);
-    console.log("📨 Accepted:", info.accepted);
-    console.log("📨 Rejected:", info.rejected);
+    console.log("✅ Email sent successfully via SendGrid");
   } catch (err) {
-    console.error("❌ Email failed");
-    console.error("🧨 Error message:", err.message);
-    console.error("🧨 Error code:", err.code);
+    console.error("❌ SendGrid email failed");
+    console.error(err.response?.body || err.message);
   }
 }
 
