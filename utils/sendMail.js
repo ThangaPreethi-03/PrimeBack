@@ -1,26 +1,21 @@
-// utils/sendEmail.js
 const nodemailer = require("nodemailer");
 
-/* ===============================
-   ENV CHECK LOGS
-================================ */
 console.log("📌 EMAIL_USER:", process.env.EMAIL_USER);
 console.log("📌 EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
 
-/* ===============================
-   TRANSPORTER SETUP
-================================ */
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
 });
 
-/* ===============================
-   SEND EMAIL FUNCTION
-================================ */
 async function sendEmail(to, subject, html) {
   console.log("📨 sendEmail called");
   console.log("➡️ To:", to);
@@ -43,13 +38,12 @@ async function sendEmail(to, subject, html) {
 
     console.log("✅ Email sent successfully");
     console.log("📬 Message ID:", info.messageId);
-    console.log("📨 Accepted by:", info.accepted);
-    console.log("📨 Rejected by:", info.rejected);
-
+    console.log("📨 Accepted:", info.accepted);
+    console.log("📨 Rejected:", info.rejected);
   } catch (err) {
     console.error("❌ Email failed");
     console.error("🧨 Error message:", err.message);
-    console.error("🧨 Full error:", err);
+    console.error("🧨 Error code:", err.code);
   }
 }
 
