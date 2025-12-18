@@ -35,10 +35,6 @@ app.use(cors({
 }));
 
 
-// ✅ MUST handle preflight explicitly
-app.options("*", cors());
-
-
 /* ===============================
    BODY PARSERS
 ================================ */
@@ -102,6 +98,7 @@ mongoose
     console.error("MongoDB error:", err);
     process.exit(1);
   });
+
 
 
 
