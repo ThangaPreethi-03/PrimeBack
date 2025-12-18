@@ -1,8 +1,8 @@
-// routes/orders.js
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const Order = require("../models/Order");
 const sendEmail = require("../utils/sendMail");
+const generateInvoice = require("../utils/generateInvoice");
 
 const router = express.Router();
 
@@ -15,7 +15,7 @@ const optionalAuth = (req, res, next) => {
     if (token) {
       req.user = jwt.verify(token, process.env.JWT_SECRET);
     }
-  } catch (err) {
+  } catch {
     console.warn("Invalid or expired token");
   }
   next();
@@ -26,15 +26,8 @@ const optionalAuth = (req, res, next) => {
 --------------------------- */
 router.post("/", optionalAuth, async (req, res) => {
   try {
-    const {
-      invoiceNumber,
-      email,
-      userId,
-      items,
-      total,
-      status,
-      meta,
-    } = req.body;
+    const { invoiceNumber, email, userId, items, total, status, meta } =
+      req.body;
 
     if (!invoiceNumber || !email || !items || !total) {
       return res.status(400).json({ msg: "Missing required fields" });
@@ -53,20 +46,28 @@ router.post("/", optionalAuth, async (req, res) => {
     const saved = await order.save();
 
     /* ------------------------
-       SEND EMAIL (🔥 FIX)
+       SEND EMAIL + PDF INVOICE
     --------------------------- */
-    sendEmail(
-      email,
-      "Your PrimeShop Order Confirmation",
-      `
-        <h2>Thank you for your order!</h2>
-        <p><strong>Invoice:</strong> ${invoiceNumber}</p>
-        <p><strong>Total:</strong> ₹${total}</p>
-        <p>Status: ${saved.status}</p>
-        <br/>
-        <p>— PrimeShop Team</p>
-      `
-    );
+    try {
+      const invoicePDF = await generateInvoice(saved);
+
+      await sendEmail(
+        email,
+        "Your PrimeShop Order Confirmation",
+        `
+          <h2>Thank you for your order!</h2>
+          <p><strong>Invoice:</strong> ${invoiceNumber}</p>
+          <p><strong>Total:</strong> ₹${total}</p>
+          <p>Status: ${saved.status}</p>
+          <p>Please find your invoice attached.</p>
+          <br/>
+          <p>— PrimeShop Team</p>
+        `,
+        invoicePDF
+      );
+    } catch (mailErr) {
+      console.error("⚠️ Email failed, order saved:", mailErr.message);
+    }
 
     res.json({ ok: true, order: saved });
   } catch (err) {
@@ -80,13 +81,11 @@ router.post("/", optionalAuth, async (req, res) => {
 --------------------------- */
 router.get("/user/:userId", async (req, res) => {
   try {
-    const orders = await Order.find({
-      userId: req.params.userId,
-    }).sort({ createdAt: -1 });
-
+    const orders = await Order.find({ userId: req.params.userId }).sort({
+      createdAt: -1,
+    });
     res.json(orders);
   } catch (err) {
-    console.error("FETCH USER ORDERS ERROR:", err);
     res.status(500).json({ msg: "Server error" });
   }
 });
@@ -99,14 +98,9 @@ router.get("/track/:invoiceNumber", async (req, res) => {
     const order = await Order.findOne({
       invoiceNumber: req.params.invoiceNumber,
     });
-
-    if (!order) {
-      return res.status(404).json({ msg: "Order not found" });
-    }
-
+    if (!order) return res.status(404).json({ msg: "Order not found" });
     res.json(order);
-  } catch (err) {
-    console.error("TRACK ORDER ERROR:", err);
+  } catch {
     res.status(500).json({ msg: "Server error" });
   }
 });
