@@ -6,20 +6,20 @@ console.log("EMAIL_PASS:", process.env.EMAIL_PASSWORD);
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER,
+    user: process.env.EMAIL,
     pass: process.env.EMAIL_PASS,
   },
 });
 
 async function sendEmail(to, subject, html) {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+  if (!process.env.EMAIL || !process.env.EMAIL_PASS) {
     console.error("❌ MAIL_USER / MAIL_PASS missing");
     return;
   }
 
   try {
     await transporter.sendMail({
-      from: `"PrimeShop" <${process.env.EMAIL_USER}>`,
+      from: `"PrimeShop" <${process.env.EMAIL}>`,
       to,
       subject,
       html,
