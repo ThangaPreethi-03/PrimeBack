@@ -19,24 +19,21 @@ const allowedOrigins = [
 /* ===============================
    CORS CONFIG (CORRECT WAY)
 ================================ */
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // Allow server-to-server, Postman, curl
-      if (!origin) return callback(null, true);
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
 
-      // ❗ Do NOT throw error
-      return callback(null, false);
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+    return callback(null, false); // ❗ do NOT throw error
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
+
 
 // ✅ MUST handle preflight explicitly
 app.options("*", cors());
@@ -105,6 +102,7 @@ mongoose
     console.error("MongoDB error:", err);
     process.exit(1);
   });
+
 
 
 
