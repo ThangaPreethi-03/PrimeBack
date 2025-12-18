@@ -1,27 +1,29 @@
-// utils/sendEmail.js
 const sgMail = require("@sendgrid/mail");
-
-console.log("📌 SENDGRID KEY exists:", !!process.env.SENDGRID_API_KEY);
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-async function sendEmail(to, subject, html) {
-  console.log("📨 sendEmail called");
-  console.log("➡️ To:", to);
-  console.log("➡️ Subject:", subject);
-
+async function sendEmail(to, subject, html, pdfBuffer) {
   try {
     await sgMail.send({
       to,
       from: process.env.EMAIL_FROM,
       subject,
       html,
+      attachments: pdfBuffer
+        ? [
+            {
+              content: pdfBuffer.toString("base64"),
+              filename: "PrimeShop_Invoice.pdf",
+              type: "application/pdf",
+              disposition: "attachment",
+            },
+          ]
+        : [],
     });
 
-    console.log("✅ Email sent successfully via SendGrid");
+    console.log("✅ Email sent successfully with invoice");
   } catch (err) {
-    console.error("❌ SendGrid email failed");
-    console.error(err.response?.body || err.message);
+    console.error("❌ Email failed:", err.response?.body || err.message);
   }
 }
 
