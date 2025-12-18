@@ -24,10 +24,14 @@ router.post("/", async (req, res) => {
 
     const saved = await review.save();
     res.json(saved);
-  } catch (err) {
-    console.error("SAVE REVIEW ERROR:", err);
-    res.status(500).json({ msg: "Server error" });
-  }
+  } catch (error) {
+  console.error("❌ Review save error:", error);
+  res.status(500).json({
+    msg: "Server error",
+    error: error.message
+  });
+}
+
 });
 
 /* ===============================
