@@ -1,5 +1,7 @@
 // utils/sendEmail.js
 const nodemailer = require("nodemailer");
+console.log("EMAIL:", process.env.EMAIL);
+console.log("EMAIL_PASS:", process.env.EMAIL_PASSWORD);
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
