@@ -6,7 +6,11 @@ async function sendEmail(to, subject, html, pdfBuffer = null) {
   try {
     await sgMail.send({
       to,
-      from: process.env.EMAIL_FROM,
+from: {
+  email: process.env.EMAIL_FROM,
+  name: "PrimeShop"
+},
+
       subject,
       html,
       attachments: pdfBuffer
